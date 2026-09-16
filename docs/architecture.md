@@ -35,7 +35,9 @@ scripts/hermes-status
 ├── systemctl --user (read-only queries)
 ├── ~/.hermes/config.yaml (model only)
 ├── ~/.local/state/omarchy/agents/usage/hermes.json
-└── hermes-node status (optional, bounded by timeout and output size)
+├── hermes-node status (optional, bounded by timeout and output size)
+└── remote mode only: GET <hermesVpsUrl>/api/status (bounded by timeout and
+    byte size, no credentials sent) — replaces every local check above
 ```
 
 ## Quattro integration
@@ -101,6 +103,30 @@ io.github.archer-clawbot.hermes-harness/
 ├── README.md
 └── LICENSE
 ```
+
+## Remote mode
+
+When the `hermesVpsUrl` setting is non-empty, the adapter fetches that host's
+`/api/status` instead of running every local check. This lets the widget
+show a Hermes gateway that lives on a remote box (for example, one run as a
+persistent VPS service) rather than one installed on this machine.
+
+- The request is `GET <hermesVpsUrl>/api/status`, bounded by
+  `hermes-safe-io run` the same way local subprocess calls are (time and byte
+  limits), with `curl`'s own `--max-time` as a second bound. No credentials,
+  cookies, or tokens are sent — the endpoint is read publicly by design on
+  the Hermes side.
+- Fields that don't exist on that endpoint (active model, session title/ID)
+  are left blank rather than guessed. The "nodes" list is repurposed to show
+  the remote gateway's configured profiles, each marked online only when
+  `gateway_running` is true — this is a coarser signal than the real
+  per-node online check local mode does with `hermes-node status` and should
+  not be read as per-profile health.
+- An unreachable or invalid response reports an explicit "VPS unreachable"
+  state; it does **not** fall back to checking this machine for a local
+  install the user opted out of by setting the URL.
+- This is a status *read*, not remote command execution, gateway control, or
+  job dispatch — those remain out of scope per the non-goals below.
 
 ## Explicit non-goals
 

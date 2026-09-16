@@ -11,9 +11,10 @@ The plugin provides visibility and launch actions. It is not an authorization bo
 The shipped code requires only ordinary user access:
 
 - read plugin files;
-- execute `bash`, Python 3, `jq`, `systemctl`, `hermes`, and optionally `hermes-node` from `PATH`;
+- execute `bash`, Python 3, `jq`, `systemctl`, `hermes`, `curl`, and optionally `hermes-node` from `PATH`;
 - read the user-local Hermes usage record and the `model` line from the Hermes configuration;
 - query the user service manager;
+- when a remote URL is configured (see "Remote status mode" below), make an outbound HTTP GET to that user-supplied host;
 - open Hermes through Omarchy's bar runner.
 
 It does not use `sudo`, `pkexec`, setuid programs, Polkit actions, root services, or package-manager hooks.
@@ -39,6 +40,10 @@ The adapter reads only the first top-level `model` value from `${HERMES_HOME:-$H
 ### Executables on PATH
 
 `hermes` and `hermes-node` are resolved through the shell's `PATH`. A user who replaces either executable can influence status output and launch behavior. This is consistent with ordinary desktop application trust, but it means the panel is not suitable as an integrity monitor.
+
+### Remote status mode
+
+Setting `hermesVpsUrl` makes the adapter fetch `<hermesVpsUrl>/api/status` over plain HTTP instead of running the local checks. The URL is user-supplied plugin settings, not attacker-controlled input; the request is a plain `GET` with no query parameters, headers, cookies, or credentials attached — nothing from this device is sent to that host beyond the request itself. The response is read through the same descriptor/byte/time-bounded `hermes-safe-io run` path as other subprocess output (`curl -fsS --max-time 3`, 65 KiB cap) and only accepted after `jq` confirms it decodes to a JSON object; an invalid or oversized response is treated as "unreachable," not partially trusted. Because the target host is a Hermes gateway the user chose to point the widget at, this does not change the "not an authorization boundary" posture: the plugin still only displays whatever that endpoint reports, never sends commands to it, and treats its output the same as any other untrusted display data.
 
 ### Federated nodes
 

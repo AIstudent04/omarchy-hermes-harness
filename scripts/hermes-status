@@ -3,6 +3,7 @@ set -u
 
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 safe_io="$script_dir/hermes-safe-io"
+vps_url="${1:-}"
 usage_file="${XDG_STATE_HOME:-$HOME/.local/state}/omarchy/agents/usage/hermes.json"
 base='{}'
 usage_candidate="$($safe_io read 262144 "$usage_file" 2>/dev/null || true)"
@@ -11,6 +12,55 @@ if [[ -n "$usage_candidate" ]]; then
   if [[ -n "$validated_base" && ${#validated_base} -le 262144 ]]; then
     base="$validated_base"
   fi
+fi
+
+if [[ -n "$vps_url" && "$vps_url" =~ ^https?:// ]]; then
+  # Remote mode: read a Hermes gateway's public /api/status instead of checking
+  # this machine for a local install. Bounded the same way local subprocess
+  # calls are (hermes-safe-io run), read-only, no auth token or credentials
+  # sent or stored. See docs/architecture.md and docs/security.md.
+  remote_json="$($safe_io run 4 65536 -- curl -fsS --max-time 3 "${vps_url%/}/api/status" 2>/dev/null || true)"
+  remote_valid="$(jq -ce 'select(type == "object")' <<<"$remote_json" 2>/dev/null || true)"
+
+  if [[ -n "$remote_valid" ]]; then
+    jq -cn --argjson r "$remote_valid" '
+      ($r.gateway_state // "") as $gs
+      | {
+          installed: true,
+          version: ($r.version // ""),
+          gatewayState: (if $gs == "running" then "active"
+                         elif $gs == "" then "unknown"
+                         else "stopped" end),
+          activeModel: "",
+          currentSessionId: "",
+          currentSessionTitle: (($r.active_sessions // 0) | tostring) + " active session(s) on VPS",
+          hermesNodeAvailable: true,
+          nodes: (
+            [($r.profiles // [])[] as $p | {($p): {online: (($r.gateway_running // false) == true)}}]
+            | add // {}
+          ),
+          nodesOnline: (if ($r.gateway_running // false) == true then (($r.profiles // []) | length) else 0 end),
+          nodesTotal: (($r.profiles // []) | length)
+        }'
+    exit 0
+  fi
+
+  # Remote fetch failed or returned invalid JSON: fall through and report an
+  # honest "unreachable" status rather than silently checking this machine
+  # for a local install the user explicitly opted out of.
+  jq -cn '{
+    installed: false,
+    version: "",
+    gatewayState: "unknown",
+    activeModel: "",
+    currentSessionId: "",
+    currentSessionTitle: "VPS unreachable",
+    hermesNodeAvailable: false,
+    nodes: {},
+    nodesOnline: 0,
+    nodesTotal: 0
+  }'
+  exit 0
 fi
 
 hermes_bin="$(command -v hermes 2>/dev/null || true)"

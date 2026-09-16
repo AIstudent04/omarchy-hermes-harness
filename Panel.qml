@@ -61,7 +61,7 @@ Panel {
 
   Process {
     id: statusProc
-    command: ["bash", Quickshell.env("HOME") + "/.config/omarchy/plugins/io.github.archer-clawbot.hermes-harness/scripts/hermes-status"]
+    command: ["bash", Quickshell.env("HOME") + "/.config/omarchy/plugins/io.github.archer-clawbot.hermes-harness/scripts/hermes-status", setting("hermesVpsUrl", "")]
     stdout: StdioCollector { waitForEnd: true; onStreamFinished: root.acceptStatus(text) }
     onExited: function(exitCode) { if (exitCode !== 0) root.lastError = "Status command exited " + exitCode }
   }

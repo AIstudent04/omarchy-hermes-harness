@@ -11,6 +11,8 @@ Hermes Harness is a user-local Quattro shell plugin for Omarchy. It adds a nativ
 
 The plugin is deliberately read-only. It does not install Hermes, alter gateway services, modify privileged interfaces, or change package-managed Omarchy files.
 
+By default it checks this machine's own Hermes install. Set the **Remote Hermes dashboard URL** widget setting to a gateway's base URL (e.g. `http://100.x.y.z:9119`, a Tailscale address) to instead show that gateway's status — useful when Hermes runs as a persistent service elsewhere (a VPS, a home server) rather than on this machine. See [Architecture § Remote mode](docs/architecture.md#remote-mode) for exactly what that does and doesn't send.
+
 ## Requirements
 
 - Omarchy 4.x / current Quattro plugin runtime
