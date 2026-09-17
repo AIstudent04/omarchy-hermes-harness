@@ -7,6 +7,7 @@ Hermes Harness is a user-local Quattro shell plugin for Omarchy. It adds a nativ
 - active model
 - current session
 - federated node summary when `hermes-node` is available
+- cost telemetry (balance, spend, per-model tokens) when the Omarchy usage record provides it
 - an **Open Hermes** action
 
 The plugin is deliberately read-only. It does not install Hermes, alter gateway services, modify privileged interfaces, or change package-managed Omarchy files.

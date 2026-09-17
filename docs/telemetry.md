@@ -20,6 +20,25 @@ The output is intentionally compatible with an existing Omarchy Hermes provider 
 | `nodesOnline` | integer | live node status or base record | Online-node count |
 | `nodesTotal` | integer | live node status or base record | Known-node count |
 | `nodes` | object | live node status or base record | Map keyed by node alias |
+| `cost` | object or null | base record (`balance`, `modelUsage`, daily counters) | Normalized cost telemetry; `null` when the record has none |
+
+## Cost object
+
+When the provider record carries a `balance` block or per-model `modelUsage`, the adapter emits a normalized `cost` object so the UI never depends on the raw provider schema:
+
+| Field | Type | Meaning |
+|---|---|---|
+| `currency` | string | ISO-style currency code (max 8 chars, default `USD`) |
+| `balanceRemaining` | number or null | Credits remaining |
+| `balanceFunded` | number or null | Total credits funded |
+| `balanceSpent` | number or null | Lifetime spend |
+| `balanceEstimated` | boolean | Provider marks the balance as estimated |
+| `todayTotalTokens` | integer | Tokens used today (all models) |
+| `todaySessions` | integer | Sessions started today |
+| `totalSessions` | integer | Lifetime sessions |
+| `models` | array | Up to 8 models by total tokens: `{model, inputTokens, outputTokens, cacheReadInputTokens}` |
+
+`cost` is `null` when the record has no cost data; the panel hides the COST section in that case rather than rendering zeros. Cost fields are carried through in remote mode as well — the balance belongs to the provider account, not the machine being monitored.
 
 Each live node entry currently has this minimal shape:
 
